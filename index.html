@@ -2,6 +2,8 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Clerri Collective</title>
     <!-- Force redeploy -->
     <style>
@@ -105,11 +107,21 @@
             50% { opacity: 1; }
         }
         
+        /* Debug styles - shows hotspot area */
+        .debug .url-hotspot {
+            border: 3px solid red !important;
+            background: rgba(255, 0, 0, 0.2) !important;
+            z-index: 100 !important;
+        }
+        
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
                 padding: 0;
                 overflow: hidden;
+                position: fixed;
+                width: 100vw;
+                height: 100vh;
             }
             
             .container {
@@ -119,14 +131,16 @@
                 border-radius: 0;
                 background-size: contain;
                 background-position: center;
+                background-repeat: no-repeat;
             }
             
             .reset-symbol {
-                top: 20px;
-                right: 20px;
+                top: 15px;
+                right: 15px;
                 bottom: auto;
-                width: 60px;
-                height: 60px;
+                width: 70px;
+                height: 70px;
+                z-index: 15;
             }
             
             .reset-symbol::before {
@@ -134,17 +148,20 @@
             }
             
             .url-hotspot {
-                left: 25%;
-                top: 35%;
-                width: 50%;
-                height: 5%;
+                left: 26%;
+                top: 38%;
+                width: 48%;
+                height: 6%;
+                z-index: 12;
             }
         }
         
         @media (max-width: 480px) {
             .reset-symbol {
-                width: 50px;
-                height: 50px;
+                width: 60px;
+                height: 60px;
+                top: 20px;
+                right: 20px;
             }
             
             .reset-symbol::before {
@@ -152,15 +169,24 @@
             }
             
             .url-hotspot {
-                left: 15%;
-                top: 28%;
-                width: 70%;
+                left: 22%;
+                top: 36%;
+                width: 56%;
                 height: 8%;
+            }
+        }
+        
+        /* Touch-friendly styles for mobile */
+        @media (hover: none) and (pointer: coarse) {
+            .url-hotspot.revealed {
+                background: rgba(255, 255, 255, 0.3) !important;
+                border: 2px solid #ccaa00 !important;
+                border-radius: 8px;
             }
         }
     </style>
 </head>
-<body>
+<body class="debug">
     <div class="reset-symbol" id="resetButton"></div>
     <div class="container" id="container">
         <div class="url-hotspot" id="urlHotspot"></div>
