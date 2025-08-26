@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Clerri Collective</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ccaa00;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            width: 37.5vw;
+            height: 37.5vw;
+            position: relative;
+            background: url('clerri.png') center/cover no-repeat;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .url-hotspot {
+            position: absolute;
+            left: 25.9375%;
+            top: 34%;
+            width: 48.125%;
+            height: 4%;
+            z-index: 6;
+            cursor: pointer;
+            background: transparent;
+            pointer-events: none;
+        }
+        
+        .url-hotspot.revealed {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .url-hotspot.revealed:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        
+        .scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            cursor: crosshair;
+            pointer-events: auto;
+        }
+        
+        .reset-symbol {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #002920;
+            border-radius: 50%;
+            border: 3px solid #333;
+        }
+        
+        .reset-symbol:hover {
+            transform: scale(1.2);
+            background: #001a15;
+            box-shadow: 0 0 15px rgba(0, 41, 32, 0.6);
+        }
+        
+        .reset-symbol::before {
+            content: 'RESET';
+            font-size: 10px;
+            color: #ff1493;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+        
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+            z-index: 4;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+                overflow: hidden;
+            }
+            
+            .container {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+                border-radius: 0;
+                background-size: contain;
+                background-position: center;
+            }
+            
+            .reset-symbol {
+                top: 20px;
+                right: 20px;
+                bottom: auto;
+                width: 60px;
+                height: 60px;
+            }
+            
+            .reset-symbol::before {
+                font-size: 12px;
+            }
+            
+            .url-hotspot {
+                left: 25%;
+                top: 35%;
+                width: 50%;
+                height: 5%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .reset-symbol {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .reset-symbol::before {
+                font-size: 10px;
+            }
+            
+            .url-hotspot {
+                left: 15%;
+                top: 28%;
+                width: 70%;
+                height: 8%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="reset-symbol" id="resetButton"></div>
+    <div class="container" id="container">
+        <div class="url-hotspot" id="urlHotspot"></div>
+        <canvas class="scratch-canvas" id="scratchCanvas"></canvas>
+    </div>
+    
+    <script>
+        function createStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            const size = Math.random() * 3 + 1;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            
+            star.style.animationDelay = Math.random() * 2 + 's';
+            star.style.animationDuration = (Math.random() * 3 + 1) + 's';
+            
+            return star;
+        }
+        
+        // Setup scratch canvas
+        const container = document.getElementById('container');
+        const scratchCanvas = document.getElementById('scratchCanvas');
+        const ctx = scratchCanvas.getContext('2d');
+        
+        // Set canvas size
+        const rect = container.getBoundingClientRect();
+        scratchCanvas.width = rect.width;
+        scratchCanvas.height = rect.height;
+        
+        // Create stars array for animation
+        const stars = [];
+        for (let i = 0; i < 1600; i++) {
+            stars.push({
+                x: Math.random() * scratchCanvas.width,
+                y: Math.random() * scratchCanvas.height,
+                size: Math.random() * 3 + 1,
+                opacity: Math.random(),
+                twinkleSpeed: Math.random() * 0.02 + 0.005
+            });
+        }
+        
+        // Create a scratch mask canvas to track scratched areas
+        const scratchMask = document.createElement('canvas');
+        scratchMask.width = scratchCanvas.width;
+        scratchMask.height = scratchCanvas.height;
+        const maskCtx = scratchMask.getContext('2d');
+        
+        // Initialize mask as fully white (show everything)
+        maskCtx.fillStyle = 'white';
+        maskCtx.fillRect(0, 0, scratchMask.width, scratchMask.height);
+        
+        // Animation function
+        function drawStars() {
+            // Clear canvas
+            ctx.clearRect(0, 0, scratchCanvas.width, scratchCanvas.height);
+            
+            // Draw dark green background
+            ctx.fillStyle = '#002920';
+            ctx.fillRect(0, 0, scratchCanvas.width, scratchCanvas.height);
+            
+            // Draw twinkling stars
+            stars.forEach(star => {
+                star.opacity += star.twinkleSpeed;
+                if (star.opacity > 1) {
+                    star.opacity = 1;
+                    star.twinkleSpeed = -Math.abs(star.twinkleSpeed);
+                } else if (star.opacity < 0.3) {
+                    star.opacity = 0.3;
+                    star.twinkleSpeed = Math.abs(star.twinkleSpeed);
+                }
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Apply scratch mask to hide scratched areas
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.drawImage(scratchMask, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        
+        // Start animation
+        function animate() {
+            drawStars();
+            requestAnimationFrame(animate);
+        }
+        animate();
+        
+        let isScratching = false;
+        let lastX = 0;
+        let lastY = 0;
+        
+        scratchCanvas.addEventListener('mousedown', (e) => {
+            isScratching = true;
+            const rect = scratchCanvas.getBoundingClientRect();
+            const scaleX = scratchCanvas.width / rect.width;
+            const scaleY = scratchCanvas.height / rect.height;
+            lastX = (e.clientX - rect.left) * scaleX;
+            lastY = (e.clientY - rect.top) * scaleY;
+            scratch(lastX, lastY);
+        });
+        
+        scratchCanvas.addEventListener('mouseup', () => {
+            isScratching = false;
+        });
+        
+        scratchCanvas.addEventListener('mouseleave', () => {
+            isScratching = false;
+        });
+        
+        // Touch events for mobile
+        scratchCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isScratching = true;
+            const rect = scratchCanvas.getBoundingClientRect();
+            const scaleX = scratchCanvas.width / rect.width;
+            const scaleY = scratchCanvas.height / rect.height;
+            const touch = e.touches[0];
+            lastX = (touch.clientX - rect.left) * scaleX;
+            lastY = (touch.clientY - rect.top) * scaleY;
+            scratch(lastX, lastY);
+        });
+        
+        scratchCanvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            isScratching = false;
+        });
+        
+        scratchCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isScratching) return;
+            
+            const rect = scratchCanvas.getBoundingClientRect();
+            const scaleX = scratchCanvas.width / rect.width;
+            const scaleY = scratchCanvas.height / rect.height;
+            const touch = e.touches[0];
+            const currentX = (touch.clientX - rect.left) * scaleX;
+            const currentY = (touch.clientY - rect.top) * scaleY;
+            
+            scratchLine(lastX, lastY, currentX, currentY);
+            
+            lastX = currentX;
+            lastY = currentY;
+        });
+        
+        scratchCanvas.addEventListener('mousemove', (e) => {
+            if (!isScratching) return;
+            
+            const rect = scratchCanvas.getBoundingClientRect();
+            const scaleX = scratchCanvas.width / rect.width;
+            const scaleY = scratchCanvas.height / rect.height;
+            const currentX = (e.clientX - rect.left) * scaleX;
+            const currentY = (e.clientY - rect.top) * scaleY;
+            
+            scratchLine(lastX, lastY, currentX, currentY);
+            
+            lastX = currentX;
+            lastY = currentY;
+        });
+        
+        function scratch(x, y) {
+            // Update the scratch mask
+            maskCtx.globalCompositeOperation = 'destination-out';
+            maskCtx.beginPath();
+            maskCtx.arc(x, y, 25, 0, Math.PI * 2);
+            maskCtx.fill();
+            checkUrlRevealed();
+        }
+        
+        function scratchLine(x1, y1, x2, y2) {
+            // Update the scratch mask
+            maskCtx.globalCompositeOperation = 'destination-out';
+            maskCtx.lineWidth = 50;
+            maskCtx.lineCap = 'round';
+            maskCtx.beginPath();
+            maskCtx.moveTo(x1, y1);
+            maskCtx.lineTo(x2, y2);
+            maskCtx.stroke();
+            checkUrlRevealed();
+        }
+        
+        function checkUrlRevealed() {
+            // Check if the URL area has been sufficiently scratched off
+            const hotspot = document.getElementById('urlHotspot');
+            const hotspotRect = hotspot.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Convert hotspot position to canvas coordinates
+            const hotspotX = (hotspotRect.left - containerRect.left) * (scratchMask.width / containerRect.width);
+            const hotspotY = (hotspotRect.top - containerRect.top) * (scratchMask.height / containerRect.height);
+            const hotspotW = hotspotRect.width * (scratchMask.width / containerRect.width);
+            const hotspotH = hotspotRect.height * (scratchMask.height / containerRect.height);
+            
+            // Sample several points in the URL area to see if they're revealed
+            const samplePoints = 20;
+            let revealedPoints = 0;
+            
+            for (let i = 0; i < samplePoints; i++) {
+                const sampleX = hotspotX + (Math.random() * hotspotW);
+                const sampleY = hotspotY + (Math.random() * hotspotH);
+                
+                // Get pixel data from the mask
+                const imageData = maskCtx.getImageData(sampleX, sampleY, 1, 1);
+                const alpha = imageData.data[3]; // Alpha channel
+                
+                if (alpha < 128) { // If mostly transparent (scratched off)
+                    revealedPoints++;
+                }
+            }
+            
+            // If more than 50% of the URL area is revealed, make it clickable
+            if (revealedPoints > samplePoints * 0.5) {
+                hotspot.classList.add('revealed');
+            } else {
+                hotspot.classList.remove('revealed');
+            }
+        }
+        
+        // Reset functionality
+        document.getElementById('resetButton').addEventListener('click', () => {
+            // Reset the scratch mask to fully white (show everything)
+            maskCtx.globalCompositeOperation = 'source-over';
+            maskCtx.fillStyle = 'white';
+            maskCtx.fillRect(0, 0, scratchMask.width, scratchMask.height);
+            // Hide the hotspot when reset
+            document.getElementById('urlHotspot').classList.remove('revealed');
+        });
+        
+        // Make only the URL hotspot clickable
+        document.getElementById('urlHotspot').addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            console.log('Hotspot clicked!'); // Debug message
+            window.open('https://clerri-collective.printify.me/', '_blank');
+        });
+        
+        // Debug: log when hotspot is hovered
+        document.getElementById('urlHotspot').addEventListener('mouseenter', () => {
+            console.log('Hotspot hovered!');
+        });
+    </script>
+</body>
+</html>

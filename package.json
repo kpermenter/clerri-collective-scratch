@@ -1,0 +1,19 @@
+{
+  "name": "clerri-collective-scratch",
+  "version": "1.0.0",
+  "description": "Interactive scratch-off game revealing the Clerri Collective",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 3000",
+    "build": "echo 'Static site - no build needed'"
+  },
+  "keywords": [
+    "scratch-off",
+    "interactive", 
+    "clerri-collective",
+    "canvas",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT"
+}
